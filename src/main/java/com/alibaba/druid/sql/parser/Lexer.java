@@ -430,6 +430,12 @@ public class Lexer {
                     return;
                 case '*':
                     scanChar();
+                    // for Teradata power(a,b) <=> a ** b 
+                    if (ch == '*') {
+                    	scanChar();
+                    	token = Token.POWER;
+                    	return;
+                    } 
                     token = Token.STAR;
                     return;
                 case '?':

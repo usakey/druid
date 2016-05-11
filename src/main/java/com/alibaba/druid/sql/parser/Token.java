@@ -277,6 +277,7 @@ public enum Token {
     FORMAT("FORMAT"),
     QUALIFY("QUALIFY"),
     MOD("MOD"),
+    POWER("**"),
     
     CONCAT("CONCAT"), // DB2
 

@@ -62,6 +62,9 @@ public class TeradataSelectParser extends SQLSelectParser{
             } else if (lexer.token() == (Token.ALL)) {
                 queryBlock.setDistionOption(SQLSetQuantifier.ALL);
                 lexer.nextToken();
+            } else if (lexer.token() == Token.UNIQUE) {
+            	queryBlock.setDistionOption(SQLSetQuantifier.UNIQUE);
+                lexer.nextToken();
             }
             parseSelectList(queryBlock);
         }
