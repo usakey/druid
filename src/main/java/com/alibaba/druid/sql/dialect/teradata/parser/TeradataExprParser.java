@@ -146,12 +146,12 @@ public class TeradataExprParser extends SQLExprParser {
     			sqlExpr = new SQLCharExpr(lexer.stringVal());
     			lexer.nextToken();
     			if (identifierEquals("XB") || identifierEquals("XC")) {
-    				SQLExpr expr = new SQLIdentifierExpr(sqlExpr.toString() + lexer.stringVal());
+//    				SQLExpr expr = new SQLIdentifierExpr(sqlExpr.toString() + lexer.stringVal());
     				lexer.nextToken();
-    				return primaryRest(expr);
+    				return primaryRest(sqlExpr);
     			} else {
     				return primaryRest(sqlExpr);
-    			}    			
+    			}
     		default:
     			return super.primary();
     	}
@@ -272,25 +272,32 @@ public class TeradataExprParser extends SQLExprParser {
                 lexer.nextToken();
                 accept(Token.RPAREN);
             }
-            
-            accept(Token.TO);
-            
-            if (identifierEquals("SECOND")) {
-                lexer.nextToken();
-                interval.setToType(TeradataIntervalUnit.SECOND);
-                if (lexer.token() == Token.LPAREN) {
+           
+            if (lexer.token() == Token.TO) {
+            	accept(Token.TO);
+            	
+            	if (identifierEquals("SECOND")) {
                     lexer.nextToken();
-                    if (lexer.token() != Token.LITERAL_INT) {
-                        throw new ParserException("syntax error");
+                    interval.setToType(TeradataIntervalUnit.SECOND);
+                    if (lexer.token() == Token.LPAREN) {
+                        lexer.nextToken();
+                        if (lexer.token() != Token.LITERAL_INT) {
+                            throw new ParserException("syntax error");
+                        }
+                        interval.setFactionalSecondsPrecision(lexer.integerValue().intValue());
+                        lexer.nextToken();
+                        accept(Token.RPAREN);
                     }
-                    interval.setFactionalSecondsPrecision(lexer.integerValue().intValue());
+                } else {
+                    interval.setToType(TeradataIntervalUnit.MONTH);
                     lexer.nextToken();
-                    accept(Token.RPAREN);
                 }
+            	
+            	expr = interval;
             } else {
-                interval.setToType(TeradataIntervalUnit.MONTH);
-                lexer.nextToken();
-            }
+            	expr = interval;
+            }           
+                        
     	} else if (identifierEquals("MONTH") ||
     			   identifierEquals("SECOND")) {
     		String name = lexer.stringVal();
@@ -300,7 +307,24 @@ public class TeradataExprParser extends SQLExprParser {
     		interval.setValue(expr);
     		TeradataIntervalUnit type = TeradataIntervalUnit.valueOf(name.toUpperCase());
             interval.setType(type);
+            
+            if (lexer.token() == Token.LPAREN) {
+                lexer.nextToken();
+                if (lexer.token() != Token.LITERAL_INT) {
+                    throw new ParserException("syntax error");
+                }
+                interval.setFactionalSecondsPrecision(lexer.integerValue().intValue());
+                lexer.nextToken();
+                accept(Token.RPAREN);
+            }
+            
+            expr = interval;
     	}
+    	
+    	if (lexer.token() == Token.ASC || lexer.token() == Token.DESC) {
+    		lexer.nextToken();
+    	}
+    	
     	return super.primaryRest(expr);
     }
     
@@ -532,6 +556,11 @@ public class TeradataExprParser extends SQLExprParser {
             expr = new SQLBinaryOpExpr(expr, SQLBinaryOperator.Mod, rightExp, getDbType());
             expr = multiplicativeRest(expr);
             return expr;
+    	} else if (lexer.token() == Token.POWER) {
+    		lexer.nextToken();
+    		SQLExpr rightExp = bitXor();
+            expr = new SQLBinaryOpExpr(expr, SQLBinaryOperator.Power, rightExp, getDbType());
+            expr = multiplicativeRest(expr);
     	}
     	return super.multiplicativeRest(expr);
     }
