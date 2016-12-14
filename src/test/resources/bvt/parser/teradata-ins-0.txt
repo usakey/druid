@@ -1,0 +1,29 @@
+insert into td.target
+(
+  cal_dt,
+  lctn_txt,
+  fe_asset_rfrnc_id,
+  fe_asset_name,
+  nt_login,
+  prjct_id,
+  csum_access_cnt
+)
+select
+  s.cal_dt,
+  s.lctn_txt,
+  s.fe_asset_rfrnc_id,
+  s.fe_asset_name,
+  s.nt_login,
+  s.prjct_id,
+  s.csum_access_cnt
+from sd.source1 s
+left join sd.source2 t
+on t.cal_dt=s.cal_dt
+and t.fe_asset_rfrnc_id=s.fe_asset_rfrnc_id
+and t.lctn_txt=s.lctn_txt
+and t.nt_login=s.nt_login
+where t.cal_dt is null
+and t.lctn_txt is null
+and t.nt_login is null
+and t.fe_asset_rfrnc_id is null
+;

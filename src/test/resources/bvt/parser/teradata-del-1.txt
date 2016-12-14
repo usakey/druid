@@ -1,0 +1,1 @@
+delete from working.dw_cbt_gc_new_verified_w all;

@@ -268,6 +268,7 @@ public enum Token {
     
     // Teradata
     SEL("SEL"),
+    DEL("DEL"),
     LOCKING("LOCKING"),
     ACCESS("ACCESS"),
     VOLATILE("VOLATILE"),

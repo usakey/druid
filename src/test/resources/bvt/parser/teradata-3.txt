@@ -1,0 +1,19 @@
+select
+  s.cal_dt,
+  s.lctn_txt,
+  s.fe_asset_rfrnc_id,
+  s.fe_asset_name,
+  s.nt_login,
+  s.prjct_id,
+  s.csum_access_cnt
+from ddm_data_assets_w.ds_fe_tableau_rpt_usage_w s
+left join ddm_data_assets_w.ds_tableau_rpt_usage_dtl_w t
+on t.cal_dt=s.cal_dt
+and t.fe_asset_rfrnc_id=s.fe_asset_rfrnc_id
+and t.lctn_txt=s.lctn_txt
+and t.nt_login=s.nt_login
+where t.cal_dt is null
+and t.lctn_txt is null
+and t.nt_login is null
+and t.fe_asset_rfrnc_id is null
+;

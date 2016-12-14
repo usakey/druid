@@ -23,6 +23,7 @@ import com.alibaba.druid.sql.ast.expr.SQLAggregateExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.expr.SQLLiteralExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
+import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.teradata.ast.TeradataDateTimeDataType;
@@ -32,7 +33,14 @@ import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataDateExpr;
 import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataExtractExpr;
 import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataFormatExpr;
 import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataIntervalExpr;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataCreateTableStatement;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataDeleteStatement;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataIndex;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataMergeStatement;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataMergeStatement.MergeInsertClause;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataMergeStatement.MergeUpdateClause;
 import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataSelectQueryBlock;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataUpdateStatement;
 import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 
 public class TeradataOutputVisitor extends SQLASTOutputVisitor implements TeradataASTVisitor {
@@ -327,6 +335,243 @@ public class TeradataOutputVisitor extends SQLASTOutputVisitor implements Terada
 
 	@Override
 	public void endVisit(TeradataDateTimeDataType x) {
+		
+	}
+
+	@Override
+	public boolean visit(TeradataCreateTableStatement x) {
+        this.visit((SQLCreateTableStatement) x);
+        
+        if (x.isWithData()) {
+        	println();
+        	print0(ucase ? "WITH DATA" : "with data");
+        }
+        
+        if (x.isWithNoData()) {
+        	println();
+        	print0(ucase ? "WITH NO DATA" : "with no data");
+        }
+        
+        if (x.isOnCommit()) {
+            println();
+            print0(ucase ? "ON COMMIT" : "on commit");
+        }
+
+        if (x.isPreserveRows()) {
+            println();
+            print0(ucase ? "PRESERVE ROWS" : "preserve rows");
+        } 
+        
+        if (x.getSelect() != null) {
+            println();
+            print0(ucase ? "AS" : "as");
+            println();
+            x.getSelect().accept(this);
+        }
+        
+		return false;
+	}
+
+	@Override
+	public void endVisit(TeradataCreateTableStatement x) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean visit(TeradataIndex x) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void endVisit(TeradataIndex x) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean visit(TeradataUpdateStatement x) {
+        print0(ucase ? "UPDATE " : "update ");
+        
+        x.getTableSource().accept(this);
+                
+        if (x.getFrom() != null) {
+            println();
+        	print0(ucase ? "FROM " : "from ");
+        	x.getFrom().accept(this);
+        }
+
+        println();
+
+        print0(ucase ? "SET " : "set ");
+        for (int i = 0, size = x.getItems().size(); i < size; ++i) {
+            if (i != 0) {
+                print0(", ");
+            }
+            x.getItems().get(i).accept(this);
+        }
+
+        if (x.getWhere() != null) {
+            println();
+            print0(ucase ? "WHERE " : "where ");
+            incrementIndent();
+            x.getWhere().setParent(x);
+            x.getWhere().accept(this);
+            decrementIndent();
+        }
+		
+		return false;
+	}
+
+	@Override
+	public void endVisit(TeradataUpdateStatement x) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean visit(TeradataDeleteStatement x) {
+        print0(ucase ? "DELETE " : "delete ");
+
+        if (x.getFrom() == null) {
+            print0(ucase ? "FROM " : "from ");
+            x.getTableSource().accept(this);
+        } else {
+            x.getTableSource().accept(this);
+            println();
+            print0(ucase ? "FROM " : "from ");
+            x.getFrom().accept(this);
+        }
+
+        if (x.getUsing() != null) {
+            println();
+            print0(ucase ? "USING " : "using ");
+            x.getUsing().accept(this);
+        }
+
+        if (x.getWhere() != null) {
+            println();
+            incrementIndent();
+            print0(ucase ? "WHERE " : "where ");
+            x.getWhere().setParent(x);
+            x.getWhere().accept(this);
+            decrementIndent();
+        }
+
+        if (x.getOrderBy() != null) {
+            println();
+            x.getOrderBy().accept(this);
+        }
+        
+        if (x.getAll() != null) {
+        	print(" ");
+        	x.getAll().accept(this);
+        }
+		
+		return false;
+	}
+
+	@Override
+	public void endVisit(TeradataDeleteStatement x) {
+		
+	}
+
+	@Override
+	public boolean visit(TeradataMergeStatement x) {
+
+		print0(ucase ? "MERGE " : "merge ");
+
+        print0(ucase ? "INTO " : "into ");
+        x.getInto().accept(this);
+
+        if (x.getAlias() != null) {
+            print(' ');
+            print0(x.getAlias());
+        }
+
+        println();
+        print0(ucase ? "USING " : "using ");
+        x.getUsing().accept(this);
+
+        print0(ucase ? " ON (" : " on (");
+        x.getOn().accept(this);
+        print0(") ");
+
+        if (x.getUpdateClause() != null) {
+            println();
+            x.getUpdateClause().accept(this);
+        }
+
+        if (x.getInsertClause() != null) {
+            println();
+            x.getInsertClause().accept(this);
+        }
+		
+		return false;
+	}
+
+	@Override
+	public void endVisit(TeradataMergeStatement x) {
+	
+	}
+
+	@Override
+	public boolean visit(MergeUpdateClause x) {
+		print0(ucase ? "WHEN MATCHED THEN UPDATE SET " : "when matched then update set ");
+        printAndAccept(x.getItems(), ", ");
+        if (x.getWhere() != null) {
+            incrementIndent();
+            println();
+            print0(ucase ? "WHERE " : "where ");
+            x.getWhere().setParent(x);
+            x.getWhere().accept(this);
+            decrementIndent();
+        }
+
+        if (x.getDeleteWhere() != null) {
+            incrementIndent();
+            println();
+            print0(ucase ? "DELETE WHERE " : "delete where ");
+            x.getDeleteWhere().setParent(x);
+            x.getDeleteWhere().accept(this);
+            decrementIndent();
+        }
+        
+        return false;
+	}
+
+	@Override
+	public void endVisit(MergeUpdateClause x) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean visit(MergeInsertClause x) {
+		print0(ucase ? "WHEN NOT MATCHED THEN INSERT" : "when not matched then insert");
+        if (x.getColumns().size() > 0) {
+            print(' ');
+            printAndAccept(x.getColumns(), ", ");
+        }
+        print0(ucase ? " VALUES (" : " values (");
+        printAndAccept(x.getValues(), ", ");
+        print(')');
+        if (x.getWhere() != null) {
+            incrementIndent();
+            println();
+            print0(ucase ? "WHERE " : "where ");
+            x.getWhere().setParent(x);
+            x.getWhere().accept(this);
+            decrementIndent();
+        }
+
+        return false;
+	}
+
+	@Override
+	public void endVisit(MergeInsertClause x) {
+		// TODO Auto-generated method stub
 		
 	}
 }

@@ -1,0 +1,1 @@
+SELECT TOP 100 * FROM P_FF_T.CombineHG;

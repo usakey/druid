@@ -1,0 +1,9 @@
+select *
+from ddm_data_assets_t.ds_be_asset t,
+     ddm_data_assets_w.ds_certified_assets_w s
+where 
+    t.db_name=s.db_name
+and t.be_asset_name=s.asset_name
+and t.pltfrm_id in (3,4,7,8,13)
+and s.asset_type='table'
+;

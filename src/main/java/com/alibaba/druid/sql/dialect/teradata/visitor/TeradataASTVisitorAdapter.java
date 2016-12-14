@@ -22,6 +22,13 @@ import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataDateExpr;
 import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataExtractExpr;
 import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataFormatExpr;
 import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataIntervalExpr;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataCreateTableStatement;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataDeleteStatement;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataIndex;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataMergeStatement;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataMergeStatement.MergeInsertClause;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataMergeStatement.MergeUpdateClause;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataUpdateStatement;
 import com.alibaba.druid.sql.visitor.SQLASTVisitorAdapter;
 
 public class TeradataASTVisitorAdapter extends SQLASTVisitorAdapter implements TeradataASTVisitor {
@@ -101,6 +108,76 @@ public class TeradataASTVisitorAdapter extends SQLASTVisitorAdapter implements T
 	@Override
 	public void endVisit(TeradataDateTimeDataType x) {
 		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean visit(TeradataCreateTableStatement x) {
+		return true;
+	}
+
+	@Override
+	public void endVisit(TeradataCreateTableStatement x) {
+	
+	}
+
+	@Override
+	public boolean visit(TeradataIndex x) {
+		return true;
+	}
+
+	@Override
+	public void endVisit(TeradataIndex x) {
+		
+	}
+
+	@Override
+	public boolean visit(TeradataUpdateStatement x) {
+		return true;
+	}
+
+	@Override
+	public void endVisit(TeradataUpdateStatement x) {
+		
+	}
+
+	@Override
+	public boolean visit(TeradataDeleteStatement x) {
+		return true;
+	}
+
+	@Override
+	public void endVisit(TeradataDeleteStatement x) {
+		
+	}
+
+	@Override
+	public boolean visit(TeradataMergeStatement x) {
+		return true;
+	}
+
+	@Override
+	public void endVisit(TeradataMergeStatement x) {
+		
+	}
+
+	@Override
+	public boolean visit(MergeUpdateClause x) {
+		return true;
+	}
+
+	@Override
+	public void endVisit(MergeUpdateClause x) {
+		
+	}
+
+	@Override
+	public boolean visit(MergeInsertClause x) {
+		return true;
+	}
+
+	@Override
+	public void endVisit(MergeInsertClause x) {
 		
 	}
 

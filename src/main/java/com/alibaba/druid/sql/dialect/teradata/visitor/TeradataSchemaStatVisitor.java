@@ -22,8 +22,12 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
+import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
 import com.alibaba.druid.sql.ast.statement.SQLSubqueryTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.druid.sql.dialect.teradata.ast.TeradataDateTimeDataType;
 import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataAnalytic;
 import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataAnalyticWindowing;
@@ -31,7 +35,16 @@ import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataDateExpr;
 import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataExtractExpr;
 import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataFormatExpr;
 import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataIntervalExpr;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataCreateTableStatement;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataDeleteStatement;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataIndex;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataMergeStatement;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataMergeStatement.MergeInsertClause;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataMergeStatement.MergeUpdateClause;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataUpdateStatement;
 import com.alibaba.druid.sql.visitor.SchemaStatVisitor;
+import com.alibaba.druid.stat.TableStat;
+import com.alibaba.druid.stat.TableStat.Mode;
 import com.alibaba.druid.util.JdbcUtils;
 
 public class TeradataSchemaStatVisitor extends SchemaStatVisitor implements TeradataASTVisitor {
@@ -187,6 +200,184 @@ public class TeradataSchemaStatVisitor extends SchemaStatVisitor implements Tera
 	@Override
 	public void endVisit(TeradataDateTimeDataType x) {
 		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean visit(TeradataCreateTableStatement x) {
+		this.visit((SQLCreateTableStatement) x);
+
+        if (x.getSelect() != null) {
+            x.getSelect().accept(this);
+        }
+        return false;
+	}
+
+	@Override
+	public void endVisit(TeradataCreateTableStatement x) {
+        this.endVisit((SQLCreateTableStatement) x);	
+	}
+
+	@Override
+	public boolean visit(TeradataIndex x) {
+        accept(x.getColumns());
+		
+		return false;
+	}
+
+	@Override
+	public void endVisit(TeradataIndex x) {
+		
+	}
+
+	@Override
+	public boolean visit(TeradataUpdateStatement x) {
+
+		setAliasMap();
+        setMode(x, Mode.Update);
+
+        SQLTableSource tableSource = x.getTableSource();
+        SQLExpr tableExpr = null;
+
+        if (tableSource instanceof SQLExprTableSource) {
+            tableExpr = ((SQLExprTableSource) tableSource).getExpr();
+        }
+
+        if (tableExpr instanceof SQLName) {
+            String ident = tableExpr.toString();
+            setCurrentTable(ident);
+
+            TableStat stat = getTableStat(ident);
+            stat.incrementUpdateCount();
+
+            Map<String, String> aliasMap = getAliasMap();
+            aliasMap.put(ident, ident);
+            aliasMap.put(tableSource.getAlias(), ident);
+        } else {
+            tableSource.accept(this);
+        }
+
+        accept(x.getFrom());
+        accept(x.getItems());
+        accept(x.getWhere());
+        
+		return false;
+	}
+
+	@Override
+	public void endVisit(TeradataUpdateStatement x) {
+		this.endVisit((SQLUpdateStatement) x);
+	}
+	
+	public boolean visit(SQLExprTableSource x) {
+		if (isSimpleExprTableSource(x)) {
+			String ident = x.getExpr().toString();
+			
+            Map<String, String> aliasMap = getAliasMap();
+            if (aliasMap != null) {
+                String alias = x.getAlias();
+                if (alias != null) {
+                    putAliasMap(aliasMap, alias, ident);
+                }
+            }
+		}
+		return super.visit(x);
+	}
+
+	@Override
+	public boolean visit(TeradataDeleteStatement x) {
+		setAliasMap();
+
+        setMode(x, Mode.Delete);
+
+        accept(x.getFrom());
+        accept(x.getUsing());
+        x.getTableSource().accept(this);
+
+        if (x.getTableSource() instanceof SQLExprTableSource) {
+            SQLName tableName = (SQLName) ((SQLExprTableSource) x.getTableSource()).getExpr();
+            String ident = tableName.toString();
+            setCurrentTable(x, ident);
+
+            TableStat stat = this.getTableStat(ident);
+            stat.incrementDeleteCount();
+        }
+
+        accept(x.getWhere());
+
+        accept(x.getOrderBy());
+
+        return false;
+	}
+
+	@Override
+	public void endVisit(TeradataDeleteStatement x) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean visit(TeradataMergeStatement x) {
+
+		setAliasMap();
+
+        String originalTable = getCurrentTable();
+
+        setMode(x.getUsing(), Mode.Select);
+        x.getUsing().accept(this);
+
+        setMode(x, Mode.Merge);
+
+        String ident = x.getInto().toString();
+        setCurrentTable(x, ident);
+        x.putAttribute("_old_local_", originalTable);
+
+        TableStat stat = getTableStat(ident);
+        stat.incrementMergeCount();
+
+        Map<String, String> aliasMap = getAliasMap();
+        if (aliasMap != null) {
+            if (x.getAlias() != null) {
+                putAliasMap(aliasMap, x.getAlias(), ident);
+            }
+            putAliasMap(aliasMap, ident, ident);
+        }
+
+        x.getOn().accept(this);
+
+        if (x.getUpdateClause() != null) {
+            x.getUpdateClause().accept(this);
+        }
+
+        if (x.getInsertClause() != null) {
+            x.getInsertClause().accept(this);
+        }
+		
+		return false;
+	}
+
+	@Override
+	public void endVisit(TeradataMergeStatement x) {
+		
+	}
+
+	@Override
+	public boolean visit(MergeUpdateClause x) {
+		return true;
+	}
+
+	@Override
+	public void endVisit(MergeUpdateClause x) {
+		
+	}
+
+	@Override
+	public boolean visit(MergeInsertClause x) {
+		return true;
+	}
+
+	@Override
+	public void endVisit(MergeInsertClause x) {
 		
 	}
 

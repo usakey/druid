@@ -1,0 +1,12 @@
+update t
+from ddm_data_assets_t.ds_be_asset t,
+     ddm_data_assets_w.ds_certified_assets_w s
+set cert_ind=1,
+    cert_dt=s.certify_date,
+    leaf_team_id=(case when s.team_id is not null then s.team_id else leaf_team_id end)
+where 
+    t.db_name=s.db_name
+and t.be_asset_name=s.asset_name
+and t.pltfrm_id in (3,4,7,8,13)
+and s.asset_type='table'
+;

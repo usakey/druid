@@ -25,6 +25,11 @@ import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataDateExpr;
 import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataExtractExpr;
 import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataFormatExpr;
 import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataIntervalExpr;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataCreateTableStatement;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataDeleteStatement;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataIndex;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataMergeStatement;
+import com.alibaba.druid.sql.dialect.teradata.ast.stmt.TeradataUpdateStatement;
 import com.alibaba.druid.sql.visitor.SQLASTVisitor;
 
 public interface TeradataASTVisitor extends SQLASTVisitor {
@@ -62,4 +67,34 @@ public interface TeradataASTVisitor extends SQLASTVisitor {
 	boolean visit(TeradataDateTimeDataType x);
 	
 	void endVisit(TeradataDateTimeDataType x);
+	
+	boolean visit(TeradataCreateTableStatement x);
+	
+	void endVisit(TeradataCreateTableStatement x);
+
+	boolean visit(TeradataIndex x);
+	
+	void endVisit(TeradataIndex x);
+	
+	boolean visit(TeradataUpdateStatement x);
+	
+	void endVisit(TeradataUpdateStatement x);
+	
+	boolean visit(TeradataDeleteStatement x);
+	
+	void endVisit(TeradataDeleteStatement x);
+	
+	boolean visit(TeradataMergeStatement x);
+	
+	void endVisit(TeradataMergeStatement x);
+	
+	boolean visit(TeradataMergeStatement.MergeUpdateClause x);
+	
+	void endVisit(TeradataMergeStatement.MergeUpdateClause x);
+	
+	boolean visit(TeradataMergeStatement.MergeInsertClause x);
+
+	void endVisit(TeradataMergeStatement.MergeInsertClause x);
+
+	
 }

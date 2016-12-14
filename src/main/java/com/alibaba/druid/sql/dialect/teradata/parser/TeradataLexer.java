@@ -42,6 +42,8 @@ public class TeradataLexer extends Lexer {
         
         map.put("VOLATILE", Token.VOLATILE);
         map.put("MULTISET", Token.MULTISET);
+        map.put("SET", Token.SET);
+        map.put("COMMIT", Token.COMMIT);
         
         map.put("FORMAT", Token.FORMAT);
         map.put("EXTRACT", Token.EXTRACT);
@@ -51,6 +53,11 @@ public class TeradataLexer extends Lexer {
         map.put("MOD", Token.MOD);
         
         map.put("USING", Token.USING);
+        
+        map.put("DEL", Token.DEL);
+        
+        map.put("MATCHED", Token.MATCHED);
+        map.put("MERGE", Token.MERGE);
         
         DEFAULT_TD_KEYWORDS = new Keywords(map);
     }

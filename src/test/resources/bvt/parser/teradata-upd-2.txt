@@ -1,0 +1,86 @@
+UPDATE d
+FROM
+     mdm_tables.DW_MDM_USER d
+     ,(SELECT
+             a.USER_ID    USER_ID
+            ,MAX(CASE WHEN a.CHNL_ID = 1 then a.LAST_COM_SENT_DT 
+             ELSE Cast('1969-12-31' as date) end) LAST_EMAIL_SENT_DT
+            ,MIN(CASE WHEN a.CHNL_ID = 1 then a.FIRST_COM_SENT_DT 
+             ELSE Cast('2999-12-31' as date) end) FIRST_EMAIL_SENT_DT
+            ,MAX(a.LAST_COM_SENT_DT)  LAST_CNTCT_DT
+            ,MIN(a.FIRST_COM_SENT_DT) FIRST_CNTCT_DT
+            ,SUM(a.CMPGN_SENT_COUNT)   CMPGN_SENT_COUNT
+            ,SUM(COALESCE(b.CMPGN_RCVD_COUNT, 0)) CMPGN_RCVD_COUNT
+            ,SUM(COALESCE(c.CMPGN_CLICKED_COUNT, 0)) CMPGN_INTRCTD_COUNT
+            ,MIN(case when a.chnl_id = 1 then f.UNSBSCR_CMPGN_ID else null end) EMAIL_UNSBSCR_CMPGN_ID
+            ,SUM(case when a.chnl_id = 1 and f.UNSBSCR_CMPGN_ID is not null
+                      then (COALESCE(f.CMPGN_SENT_UNTIL_UNSBSCR_COUNT, 0))
+                      when a.chnl_id = 1 and f.UNSBSCR_CMPGN_ID is null
+                      then a.CMPGN_SENT_COUNT
+                      else 0 end) EMAIL_SENT_UNTIL_UNSBSCR_COUNT
+            ,SUM(case when a.chnl_id = 1 
+                 then a.CMPGN_SENT_COUNT
+                 else 0 end) EMAIL_SENT_COUNT
+            ,MIN(case when a.chnl_id = 5 then f.UNSBSCR_CMPGN_ID else null end) PSTL_UNSBSCR_CMPGN_ID
+            ,SUM(case when a.chnl_id = 5 and f.UNSBSCR_CMPGN_ID is not null
+                      then (COALESCE(f.CMPGN_SENT_UNTIL_UNSBSCR_COUNT, 0))
+                      when a.chnl_id = 5 and f.UNSBSCR_CMPGN_ID is null
+                      then a.CMPGN_SENT_COUNT
+                      else 0 end) PSTL_SENT_UNTIL_UNSBSCR_COUNT
+            ,SUM(case when a.chnl_id = 5
+                 then a.CMPGN_SENT_COUNT
+                 else 0 end) PSTL_SENT_COUNT
+
+       FROM
+            dms_working.STG_MDM_USR_CMPGN_SENT_W a
+            LEFT OUTER JOIN dms_working.STG_MDM_USR_CMPGN_RECVD_W b
+            ON a.USER_ID = b.USER_ID and a.CHNL_ID = b.CHNL_ID
+            LEFT OUTER JOIN  dms_working.STG_MDM_USR_CMPGN_CLICK_W c
+            ON a.USER_ID = C.USER_ID and a.CHNL_ID = c.CHNL_ID
+            LEFT OUTER JOIN  dms_working.STG_MDM_USR_CMPGN_UNSBSCR_W f
+            ON a.USER_ID = f.USER_ID and a.CHNL_ID = f.CHNL_ID
+       GROUP BY a.USER_ID
+       ) e
+SET
+     LAST_EMAIL_SENT_DT = (CASE WHEN (d.LAST_EMAIL_SENT_DT IS NULL OR 
+                                     e.LAST_EMAIL_SENT_DT > 
+                                     d.LAST_EMAIL_SENT_DT)
+                                THEN e.LAST_EMAIL_SENT_DT
+                                ELSE d.LAST_EMAIL_SENT_DT
+                                END)
+     ,FIRST_EMAIL_SENT_DT = (CASE WHEN (d.FIRST_EMAIL_SENT_DT IS NULL OR 
+                                       e.FIRST_EMAIL_SENT_DT < 
+                                       d.FIRST_EMAIL_SENT_DT)
+                                THEN e.FIRST_EMAIL_SENT_DT
+                                ELSE d.FIRST_EMAIL_SENT_DT
+                                END)
+     ,LAST_CNTCT_DT = (CASE WHEN (d.LAST_CNTCT_DT IS NULL OR 
+                                     e.LAST_CNTCT_DT > 
+                                     d.LAST_CNTCT_DT)
+                                THEN e.LAST_CNTCT_DT
+                                ELSE d.LAST_CNTCT_DT
+                                END)
+     ,FIRST_CNTCT_DT = (CASE WHEN (d.FIRST_CNTCT_DT IS NULL OR 
+                                       e.FIRST_CNTCT_DT < 
+                                       d.FIRST_CNTCT_DT)
+                                THEN e.FIRST_CNTCT_DT
+                                ELSE d.FIRST_CNTCT_DT
+                                END)
+     ,CMPGN_SENT_COUNT = d.CMPGN_SENT_COUNT + e.CMPGN_SENT_COUNT
+     ,CMPGN_RCVD_COUNT = d.CMPGN_RCVD_COUNT + e.CMPGN_RCVD_COUNT
+     ,CMPGN_INTRCTD_COUNT = d.CMPGN_INTRCTD_COUNT + e.CMPGN_INTRCTD_COUNT
+     ,EMAIL_UNSBSCR_CMPGN_ID = (CASE WHEN (d.EMAIL_UNSBSCR_CMPGN_ID IS NULL)
+                                THEN e.EMAIL_UNSBSCR_CMPGN_ID
+                                ELSE d.EMAIL_UNSBSCR_CMPGN_ID
+                                END)
+     ,EMAIL_SENT_UNTIL_UNSBSCR_COUNT = d.EMAIL_SENT_UNTIL_UNSBSCR_COUNT +               
+                                       e.EMAIL_SENT_UNTIL_UNSBSCR_COUNT
+     ,PSTL_UNSBSCR_CMPGN_ID = (CASE WHEN (d.PSTL_UNSBSCR_CMPGN_ID IS NULL)
+                                THEN e.PSTL_UNSBSCR_CMPGN_ID
+                                ELSE d.PSTL_UNSBSCR_CMPGN_ID
+                                END)
+     ,PSTL_SENT_UNTIL_UNSBSCR_COUNT = d.PSTL_SENT_UNTIL_UNSBSCR_COUNT + 
+                                      e.PSTL_SENT_UNTIL_UNSBSCR_COUNT
+     ,UPD_USER             =  'DW_BATCH'
+     ,UPD_DATE             =  current_timestamp(0)
+WHERE d.USER_ID = e.USER_ID;

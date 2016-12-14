@@ -1,0 +1,8 @@
+CREATE VOLATILE TABLE dw_ps_occur_count_v
+(
+ user_id                 DECIMAL(18,0),
+ occur_count            INTEGER
+)
+PRIMARY INDEX (user_id)
+ON COMMIT PRESERVE ROWS
+;

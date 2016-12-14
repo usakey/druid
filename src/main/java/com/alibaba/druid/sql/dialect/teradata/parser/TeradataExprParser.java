@@ -34,6 +34,11 @@ import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.druid.sql.ast.expr.SQLQueryExpr;
+import com.alibaba.druid.sql.ast.statement.NotNullConstraint;
+import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.druid.sql.ast.statement.SQLConstraint;
+import com.alibaba.druid.sql.ast.statement.SQLIndex;
+import com.alibaba.druid.sql.ast.statement.SQLIndexImpl;
 import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.dialect.teradata.ast.TeradataDateTimeDataType;
 import com.alibaba.druid.sql.dialect.teradata.ast.expr.TeradataAnalytic;
@@ -478,6 +483,9 @@ public class TeradataExprParser extends SQLExprParser {
     		SQLName name = new SQLIdentifierExpr("INTREVAL " + 
     		                                     ((TeradataIntervalExpr) interval).getType());
     		return name;
+    	} else if (lexer.token() == Token.INDEX) {
+    		SQLName name = new SQLIdentifierExpr(lexer.stringVal());
+    		return name;
     	}
     	return super.name();
     }
@@ -808,6 +816,46 @@ public class TeradataExprParser extends SQLExprParser {
         }
         
         return interval;  
+    }
+    
+    public SQLConstraint parseConstaint() {
+    	SQLName name = this.name();
+    	
+    	SQLConstraint constraint;
+    	if (lexer.token() == Token.INDEX) {
+    		constraint = parseIndex();
+    	} else {
+            throw new ParserException("TODO : " + lexer.token() + " " + lexer.stringVal());
+        }
+    	
+    	constraint.setName(name);
+    	
+    	return constraint;
+    }
+    
+    public SQLIndex parseIndex() {
+    	accept(Token.INDEX);
+    	
+    	SQLIndexImpl index = new SQLIndexImpl();
+    	accept(Token.LPAREN);
+    	exprList(index.getColumns(), index);
+    	accept(Token.RPAREN);
+    	
+    	return index;
+    }
+    
+    public SQLColumnDefinition parseColumnRest(SQLColumnDefinition column) {
+    	if (lexer.token() == Token.NOT) {
+    		lexer.nextToken();
+    		if (identifierEquals("CASESPECIFIC")) {
+    			acceptIdentifier("CASESPECIFIC");
+    		} else {
+    			accept(Token.NULL);
+    			column.addConstraint(new NotNullConstraint());
+    		}
+    		return parseColumnRest(column);    		
+    	}
+    	return column;
     }
     
 }
